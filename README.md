@@ -5,7 +5,7 @@ A React Native mobile application built with Expo that helps students find the b
 ## Features
 
 - an interactive map view with study spot markers
-- AI-powered personalized recommendations using Anthropic Claude API
+- AI-powered personalized recommendations using Google Gemini API
 - browse all study spots with filtering options
 - campus selection (UW and UMD)
 - location-based recommendations using device GPS
@@ -15,7 +15,7 @@ A React Native mobile application built with Expo that helps students find the b
 - Node.js (v14 or later)
 - npm or yarn
 - Expo CLI (`npm install -g expo-cli`)
-- Expo Go app on your mobile device (for testing) OR iOS Simulator / Android Emulator
+- Expo Go app on your mobile device (for testing) OR iOS Simulator on Xcode / Android Emulator
 
 ## Getting Started
 
@@ -29,18 +29,20 @@ npm install
 
 **🔒 Important:** This app uses a backend proxy to keep your API key secure. The key is never exposed in the mobile app.
 
-1. Create a `.env` file in the root directory:
+1. Get a Gemini API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
+
+2. Create a `.env` file in the root directory:
 ```
-ANTHROPIC_API_KEY=your-api-key-here
+GEMINI_API_KEY=your-gemini-api-key-here
 PORT=3001
 ```
 
-2. Start the backend proxy server (in a separate terminal):
+3. Start the backend proxy server (in a separate terminal):
 ```bash
 npm run server
 ```
 
-3. The mobile app will automatically connect to `http://localhost:3001`
+4. The mobile app will automatically connect to `http://localhost:3001`
 
 See `SECURITY.md` for detailed security information.
 
@@ -56,6 +58,20 @@ Then:
 - Press `i` to open in iOS Simulator
 - Press `a` to open in Android Emulator
 - Scan the QR code with Expo Go app on your phone
+
+#### Finding Your Expo URL
+
+When Expo starts, you'll see a QR code and connection URLs in the terminal. The Expo URL format is:
+
+- **Localhost:** `exp://localhost:8081` (for same machine)
+- **Network:** `exp://YOUR_IP:8081` (for devices on same network)
+
+You can also find your IP address by running:
+```bash
+ipconfig getifaddr en0
+```
+
+The Expo URL is displayed in the terminal output where the QR code appears.
 
 ### Platform-Specific Commands
 

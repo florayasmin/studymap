@@ -1,5 +1,6 @@
 // Backend proxy server to keep API keys secure
 // Run this separately: node server.js
+// Uses Google Gemini API
 
 const express = require('express');
 const cors = require('cors');
@@ -12,7 +13,7 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
-// API endpoint that proxies requests to Anthropic
+// API endpoint that proxies requests to Gemini
 app.post('/api/ai-recommendations', async (req, res) => {
   try {
     const { prompt } = req.body;
@@ -21,37 +22,67 @@ app.post('/api/ai-recommendations', async (req, res) => {
       return res.status(400).json({ error: 'Prompt is required' });
     }
 
-    const apiKey = process.env.ANTHROPIC_API_KEY;
+    const apiKey = process.env.GEMINI_API_KEY;
     
     if (!apiKey) {
-      return res.status(500).json({ error: 'API key not configured on server' });
+      return res.status(500).json({ error: 'GEMINI_API_KEY not configured on server' });
     }
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
+    // Try gemini-1.5-flash (most commonly available free model)
+    const model = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
+    // Try v1 API first (newer format), fallback to v1beta if needed
+    const apiVersion = 'v1';
+    const url = `https://generativelanguage.googleapis.com/${apiVersion}/models/${model}:generateContent?key=${apiKey}`;
+
+    const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        messages: [
-          { role: 'user', content: prompt }
-        ],
+        contents: [{
+          parts: [{
+            text: prompt
+          }]
+        }],
+        generationConfig: {
+          temperature: 0.7,
+          topK: 40,
+          topP: 0.95,
+          maxOutputTokens: 1000,
+        }
       }),
     });
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
+      const errorMsg = errorData.error?.message || 'Gemini API request failed';
+      
+      // If model not found, provide helpful hint
+      if (errorMsg.includes('not found') || errorMsg.includes('not supported')) {
+        console.error(`⚠️  Model "${model}" not available. Available models might be: gemini-pro, gemini-1.5-pro, or gemini-1.5-flash-latest`);
+        return res.status(response.status).json({ 
+          error: errorMsg,
+          hint: `Try setting GEMINI_MODEL in .env to one of: gemini-pro, gemini-1.5-pro, gemini-1.5-flash-latest`
+        });
+      }
+      
       return res.status(response.status).json({ 
-        error: errorData.error?.message || 'API request failed' 
+        error: errorMsg
       });
     }
 
     const data = await response.json();
-    res.json(data);
+    
+    // Transform Gemini response to match expected format
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    
+    // Return in a format compatible with the frontend
+    res.json({
+      content: [{
+        text: text
+      }]
+    });
   } catch (error) {
     console.error('Proxy error:', error);
     res.status(500).json({ error: error.message });

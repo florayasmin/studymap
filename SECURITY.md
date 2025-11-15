@@ -7,7 +7,7 @@ This app uses a **backend proxy server** to keep your API keys secure. The API k
 ## Architecture
 
 ```
-Mobile App → Backend Proxy Server → Anthropic API
+Mobile App → Backend Proxy Server → Google Gemini API
            (no API key)            (API key stored here)
 ```
 
@@ -24,9 +24,11 @@ npm install
 Create a `.env` file in the root directory:
 
 ```bash
-ANTHROPIC_API_KEY=your-actual-api-key-here
+GEMINI_API_KEY=your-actual-api-key-here
 PORT=3001
 ```
+
+**Get your API key:** [Google AI Studio](https://makersuite.google.com/app/apikey)
 
 **⚠️ Important:** Never commit the `.env` file to git! It's already in `.gitignore`.
 
@@ -58,7 +60,7 @@ npm start
 
 Deploy `server.js` to a hosting service (Heroku, Railway, Render, etc.):
 
-1. Set `ANTHROPIC_API_KEY` as an environment variable on your hosting service
+1. Set `GEMINI_API_KEY` as an environment variable on your hosting service
 2. Update `API_PROXY_URL` in your mobile app to point to your deployed server
 3. Use `EXPO_PUBLIC_API_PROXY_URL` environment variable or update the constant in `App.jsx`
 
@@ -97,8 +99,9 @@ By using a backend proxy:
 
 ## Troubleshooting
 
-**Error: "API key not configured on server"**
-- Make sure your `.env` file exists with `ANTHROPIC_API_KEY` set
+**Error: "GEMINI_API_KEY not configured on server"**
+- Make sure your `.env` file exists with `GEMINI_API_KEY` set
+- Get your API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
 - Restart the server after creating/updating `.env`
 
 **Error: "Network request failed"**
