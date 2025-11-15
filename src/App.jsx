@@ -8,6 +8,7 @@ import {
   TextInput,
   ActivityIndicator,
   Alert,
+  Platform,
 } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
@@ -238,27 +239,54 @@ Format your response as JSON:
   };
 
   // Map View Component
-  const MapViewComponent = () => (
-    <View style={styles.flex1}>
-      <MapView
-        style={styles.map}
-        provider={PROVIDER_GOOGLE}
-        initialRegion={campuses[selectedCampus].coords}
-        showsUserLocation
-        showsMyLocationButton
-      >
-        {studySpots[selectedCampus].map(spot => (
-          <Marker
-            key={spot.id}
-            coordinate={spot.coordinate}
-            title={spot.name}
-            description={spot.description}
-            pinColor={spot.noise === 'quiet' ? 'green' : spot.noise === 'moderate' ? 'orange' : 'red'}
-          />
-        ))}
-      </MapView>
-    </View>
-  );
+  const MapViewComponent = () => {
+    const [mapError, setMapError] = useState(null);
+
+    return (
+      <View style={styles.flex1}>
+        {mapError ? (
+          <View style={styles.mapErrorContainer}>
+            <Text style={styles.mapErrorText}>⚠️ Map Error</Text>
+            <Text style={styles.mapErrorSubtext}>{mapError}</Text>
+            <Text style={styles.mapErrorHint}>
+              Make sure Google Maps API key is configured in app.json
+            </Text>
+          </View>
+        ) : (
+          <MapView
+            style={styles.map}
+            provider={Platform.OS === 'ios' ? PROVIDER_GOOGLE : undefined}
+            initialRegion={campuses[selectedCampus].coords}
+            showsUserLocation
+            showsMyLocationButton
+            onMapReady={() => {
+              console.log('Map loaded successfully!');
+              setMapError(null);
+            }}
+            onError={(error) => {
+              console.error('Map error:', error);
+              const errorMessage = error?.nativeEvent?.message || error?.message || 'Unknown error';
+              setMapError(`Failed to load map: ${errorMessage}. Check Google Maps API key and ensure Maps SDK for iOS is enabled.`);
+            }}
+            onDidFailToLoadMap={(error) => {
+              console.error('Map failed to load:', error);
+              setMapError('Google Maps failed to load. Verify: 1) API key is correct, 2) Maps SDK for iOS is enabled, 3) Bundle ID matches restrictions.');
+            }}
+          >
+            {studySpots[selectedCampus].map(spot => (
+              <Marker
+                key={spot.id}
+                coordinate={spot.coordinate}
+                title={spot.name}
+                description={spot.description}
+                pinColor={spot.noise === 'quiet' ? 'green' : spot.noise === 'moderate' ? 'orange' : 'red'}
+              />
+            ))}
+          </MapView>
+        )}
+      </View>
+    );
+  };
 
   // AI Picks View Component
   const AIPicksView = () => (
@@ -603,6 +631,31 @@ const styles = StyleSheet.create({
   },
   map: {
     flex: 1,
+  },
+  mapErrorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+    backgroundColor: '#fef2f2',
+  },
+  mapErrorText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#dc2626',
+    marginBottom: 8,
+  },
+  mapErrorSubtext: {
+    fontSize: 16,
+    color: '#991b1b',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  mapErrorHint: {
+    fontSize: 14,
+    color: '#7f1d1d',
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
   headerGradient: {
     backgroundColor: '#4f46e5',

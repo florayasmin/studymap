@@ -109,10 +109,24 @@ studymap/
 └── package.json      # Dependencies and scripts
 ```
 
+## Google Maps Setup (iOS)
+
+**⚠️ Important:** Google Maps requires a native build and won't work in Expo Go.
+
+1. Get a Google Maps API key from [Google Cloud Console](https://console.cloud.google.com/)
+2. Enable **Maps SDK for iOS**
+3. Add your API key to `app.json` (replace `YOUR_GOOGLE_MAPS_API_KEY_HERE` in 2 places: `ios.config.googleMapsApiKey` and `plugins[1][1].googleMapsApiKey`)
+4. Create a development build:
+   ```bash
+   npx expo run:ios
+   ```
+
+See `GOOGLE_MAPS_IOS_SETUP.md` for detailed iOS setup instructions.
+
 ## Notes
 
 - The app requires location permissions to provide personalized recommendations
-- Google Maps requires an API key for production use (configure in `app.json`)
+- **Google Maps requires a native build** - use `eas build` or `expo prebuild` + native build
 - **Always run the backend proxy server** (`npm run server`) before using AI recommendations
 - API keys are stored securely on the backend - never in the mobile app code
 - See `SECURITY.md` for production deployment instructions

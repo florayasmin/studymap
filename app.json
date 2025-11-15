@@ -14,14 +14,10 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.studymap.app"
-    },
-    "android": {
-      "package": "com.studymap.app",
-      "permissions": [
-        "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION"
-      ]
+      "bundleIdentifier": "com.studymap.app",
+      "config": {
+        "googleMapsApiKey": "AIzaSyCq-U1JyrEUsvKlWAFG6J5V2zZnbrT33hc"
+      }
     },
     "plugins": [
       [
@@ -29,8 +25,7 @@
         {
           "locationAlwaysAndWhenInUsePermission": "Allow Study Spot Finder to use your location to provide personalized recommendations."
         }
-      ]
+      ],
     ]
   }
 }
-
