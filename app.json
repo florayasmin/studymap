@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Study Spot Finder",
+    "name": "Study Map",
     "slug": "studymap",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -23,7 +23,7 @@
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "Allow Study Spot Finder to use your location to provide personalized recommendations."
+          "locationAlwaysAndWhenInUsePermission": "Allow Study Map to use your location to provide personalized recommendations."
         }
       ],
     ]

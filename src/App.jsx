@@ -2,16 +2,17 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   TouchableOpacity,
   ScrollView,
   TextInput,
   ActivityIndicator,
   Alert,
   Platform,
+  Image,
 } from 'react-native';
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
+import { styles } from './styles';
 
 // API endpoint - use your backend proxy server URL
 // For local development, use: http://localhost:3001
@@ -27,16 +28,19 @@ const StudySpotFinderApp = () => {
   const [manualLat, setManualLat] = useState('');
   const [manualLng, setManualLng] = useState('');
 
+  // Logo images - using local assets
   const campuses = {
     uw: {
       name: 'University of Washington',
       location: 'Seattle, WA',
-      coords: { latitude: 47.6553, longitude: -122.3080, latitudeDelta: 0.01, longitudeDelta: 0.01 }
+      coords: { latitude: 47.6553, longitude: -122.3080, latitudeDelta: 0.01, longitudeDelta: 0.01 },
+      logo: require('../assets/images/uw-logo.png')
     },
     umd: {
       name: 'University of Maryland',
       location: 'College Park, MD',
-      coords: { latitude: 38.9869, longitude: -76.9426, latitudeDelta: 0.01, longitudeDelta: 0.01 }
+      coords: { latitude: 38.9869, longitude: -76.9426, latitudeDelta: 0.01, longitudeDelta: 0.01 },
+      logo: require('../assets/images/umd-logo.png')
     }
   };
 
@@ -291,24 +295,16 @@ Format your response as JSON:
   // AI Picks View Component
   const AIPicksView = () => (
     <ScrollView style={styles.flex1}>
-      <View style={styles.headerGradient}>
-        <Text style={styles.headerTitle}>✨ AI Recommendations</Text>
-        <Text style={styles.headerSubtitle}>Personalized study spots for you</Text>
-      </View>
-
       <View style={styles.content}>
         {!aiRecommendations ? (
           <View style={styles.aiCard}>
-            <View style={styles.iconCircle}>
-              <Text style={styles.iconText}>📍</Text>
-            </View>
             <Text style={styles.cardTitle}>Set Your Location</Text>
             <Text style={styles.cardDescription}>
               Tell us where you are to get personalized recommendations
             </Text>
 
             <View style={styles.locationCard}>
-              <Text style={styles.sectionTitle}>📍 Your Location</Text>
+              <Text style={styles.sectionTitle}>⚲ Your Location</Text>
 
               <Text style={styles.label}>Latitude</Text>
               <TextInput
@@ -346,7 +342,7 @@ Format your response as JSON:
                   onPress={requestLocationPermission}
                   disabled={loading}
                 >
-                  <Text style={styles.buttonTextDark}>📍 Use My Location</Text>
+                  <Text style={styles.buttonTextDark}>⚲ Use My Location</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -376,8 +372,8 @@ Format your response as JSON:
                   <Text style={styles.recNumber}>#{idx + 1}</Text>
                   <Text style={styles.recName}>{rec.spotName}</Text>
                   <Text style={styles.recReason}>{rec.reason}</Text>
-                  <Text style={styles.recDetail}>🕐 Best Time: {rec.bestTime}</Text>
-                  <Text style={styles.recDetail}>📍 Distance: {rec.distance}</Text>
+                  <Text style={styles.recDetail}>Best Time: {rec.bestTime}</Text>
+                  <Text style={styles.recDetail}>Distance: {rec.distance}</Text>
                 </View>
               ))
             ) : (
@@ -470,11 +466,11 @@ Format your response as JSON:
   const SettingsView = () => (
     <ScrollView style={styles.flex1}>
       <View style={styles.content}>
-        <Text style={styles.pageTitle}>⚙️ Settings</Text>
+        <Text style={styles.pageTitle}>Settings</Text>
         <Text style={styles.pageSubtitle}>Customize your experience</Text>
 
         <View style={styles.settingsCard}>
-          <Text style={styles.settingsTitle}>📍 Campus</Text>
+          <Text style={styles.settingsTitle}>⚲ Campus</Text>
           <Text style={styles.settingsDescription}>Select which campus you want to explore</Text>
 
           <TouchableOpacity
@@ -517,7 +513,7 @@ Format your response as JSON:
         </View>
 
         <View style={styles.settingsCard}>
-          <Text style={styles.settingsTitle}>📍 Your Location</Text>
+          <Text style={styles.settingsTitle}>Your Location</Text>
           <View style={styles.locationInfo}>
             <Text style={styles.locationInfoText}>
               {userLocation || (manualLat && manualLng)
@@ -540,12 +536,21 @@ Format your response as JSON:
     <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <View>
-          <Text style={styles.appTitle}>Study Spot Finder</Text>
+        <View style={styles.headerLeft}>
+          <Text style={styles.appTitle}>Study Map</Text>
           <Text style={styles.appSubtitle}>{campuses[selectedCampus].name}</Text>
         </View>
-        <View style={styles.spotsBadge}>
-          <Text style={styles.spotsBadgeText}>{studySpots[selectedCampus].length} spots</Text>
+        <View style={styles.headerCenter}>
+          <Image
+            source={campuses[selectedCampus].logo}
+            style={styles.campusLogo}
+            resizeMode="contain"
+          />
+        </View>
+        <View style={styles.headerRight}>
+          <View style={styles.spotsBadge}>
+            <Text style={styles.spotsBadgeText}>{studySpots[selectedCampus].length} spots</Text>
+          </View>
         </View>
       </View>
 
@@ -561,7 +566,7 @@ Format your response as JSON:
           style={styles.navButton}
           onPress={() => setActiveTab('map')}
         >
-          <Text style={[styles.navIcon, activeTab === 'map' && styles.navIconActive]}>🗺️</Text>
+          <Text style={[styles.navIcon, activeTab === 'map' && styles.navIconActive]}>♢</Text>
           <Text style={[styles.navText, activeTab === 'map' && styles.navTextActive]}>Map</Text>
         </TouchableOpacity>
 
@@ -569,7 +574,7 @@ Format your response as JSON:
           style={styles.navButton}
           onPress={() => setActiveTab('ai-picks')}
         >
-          <Text style={[styles.navIcon, activeTab === 'ai-picks' && styles.navIconActive]}>✨</Text>
+          <Text style={[styles.navIcon, activeTab === 'ai-picks' && styles.navIconActive]}>☆</Text>
           <Text style={[styles.navText, activeTab === 'ai-picks' && styles.navTextActive]}>AI Picks</Text>
         </TouchableOpacity>
 
@@ -577,7 +582,7 @@ Format your response as JSON:
           style={styles.navButton}
           onPress={() => setActiveTab('all-spots')}
         >
-          <Text style={[styles.navIcon, activeTab === 'all-spots' && styles.navIconActive]}>📋</Text>
+          <Text style={[styles.navIcon, activeTab === 'all-spots' && styles.navIconActive]}>♡</Text>
           <Text style={[styles.navText, activeTab === 'all-spots' && styles.navTextActive]}>All Spots</Text>
         </TouchableOpacity>
 
@@ -585,439 +590,12 @@ Format your response as JSON:
           style={styles.navButton}
           onPress={() => setActiveTab('settings')}
         >
-          <Text style={[styles.navIcon, activeTab === 'settings' && styles.navIconActive]}>⚙️</Text>
+          <Text style={[styles.navIcon, activeTab === 'settings' && styles.navIconActive]}>○</Text>
           <Text style={[styles.navText, activeTab === 'settings' && styles.navTextActive]}>Settings</Text>
         </TouchableOpacity>
       </View>
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  flex1: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    paddingTop: 50,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
-  },
-  appTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#111827',
-  },
-  appSubtitle: {
-    fontSize: 14,
-    color: '#6b7280',
-  },
-  spotsBadge: {
-    backgroundColor: '#e0e7ff',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  spotsBadgeText: {
-    color: '#4f46e5',
-    fontWeight: '600',
-  },
-  map: {
-    flex: 1,
-  },
-  mapErrorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-    backgroundColor: '#fef2f2',
-  },
-  mapErrorText: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#dc2626',
-    marginBottom: 8,
-  },
-  mapErrorSubtext: {
-    fontSize: 16,
-    color: '#991b1b',
-    textAlign: 'center',
-    marginBottom: 12,
-  },
-  mapErrorHint: {
-    fontSize: 14,
-    color: '#7f1d1d',
-    textAlign: 'center',
-    fontStyle: 'italic',
-  },
-  headerGradient: {
-    backgroundColor: '#4f46e5',
-    padding: 24,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-  },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 8,
-  },
-  headerSubtitle: {
-    fontSize: 16,
-    color: '#e0e7ff',
-  },
-  content: {
-    padding: 16,
-  },
-  aiCard: {
-    backgroundColor: '#f9fafb',
-    borderRadius: 16,
-    padding: 24,
-    alignItems: 'center',
-  },
-  iconCircle: {
-    width: 80,
-    height: 80,
-    backgroundColor: '#e0e7ff',
-    borderRadius: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  iconText: {
-    fontSize: 40,
-  },
-  cardTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  cardDescription: {
-    fontSize: 14,
-    color: '#6b7280',
-    textAlign: 'center',
-    marginBottom: 24,
-  },
-  locationCard: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 16,
-    width: '100%',
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 14,
-    color: '#6b7280',
-    marginBottom: 8,
-  },
-  input: {
-    backgroundColor: '#f9fafb',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  buttonRow: {
-    gap: 8,
-  },
-  button: {
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  buttonPrimary: {
-    backgroundColor: '#111827',
-  },
-  buttonSecondary: {
-    backgroundColor: '#fff',
-    borderWidth: 2,
-    borderColor: '#e5e7eb',
-  },
-  buttonText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: 16,
-  },
-  buttonTextDark: {
-    color: '#111827',
-    fontWeight: '600',
-    fontSize: 16,
-  },
-  quickLocationsLabel: {
-    fontSize: 14,
-    color: '#6b7280',
-    marginBottom: 12,
-  },
-  quickLocationButtons: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    justifyContent: 'center',
-  },
-  quickLocationButton: {
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-  },
-  quickLocationText: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  recommendationsTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 16,
-  },
-  recommendationCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  recNumber: {
-    fontSize: 14,
-    color: '#4f46e5',
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  recName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  recReason: {
-    fontSize: 14,
-    color: '#6b7280',
-    marginBottom: 8,
-  },
-  recDetail: {
-    fontSize: 14,
-    color: '#6b7280',
-    marginBottom: 4,
-  },
-  pageTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  pageSubtitle: {
-    fontSize: 14,
-    color: '#6b7280',
-    marginBottom: 16,
-  },
-  searchInput: {
-    backgroundColor: '#f9fafb',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  filterRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 16,
-  },
-  filterButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-    backgroundColor: '#f9fafb',
-  },
-  filterButtonActive: {
-    backgroundColor: '#111827',
-  },
-  filterQuiet: {
-    backgroundColor: '#f0fdf4',
-  },
-  filterModerate: {
-    backgroundColor: '#fef9c3',
-  },
-  filterLively: {
-    backgroundColor: '#fef2f2',
-  },
-  filterText: {
-    fontWeight: '500',
-    color: '#6b7280',
-  },
-  filterTextActive: {
-    color: '#fff',
-  },
-  spotCard: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  spotName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  spotDescription: {
-    fontSize: 14,
-    color: '#6b7280',
-    marginBottom: 12,
-  },
-  spotBadges: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 12,
-  },
-  badge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-    backgroundColor: '#f3f4f6',
-  },
-  badgeQuiet: {
-    backgroundColor: '#dcfce7',
-  },
-  badgeModerate: {
-    backgroundColor: '#fef9c3',
-  },
-  badgeLively: {
-    backgroundColor: '#fee2e2',
-  },
-  badgeText: {
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  spotTags: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  tag: {
-    backgroundColor: '#e0e7ff',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-  },
-  tagText: {
-    fontSize: 12,
-    color: '#4f46e5',
-    fontWeight: '500',
-  },
-  settingsCard: {
-    backgroundColor: '#f9fafb',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-  },
-  settingsTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 8,
-  },
-  settingsDescription: {
-    fontSize: 14,
-    color: '#6b7280',
-    marginBottom: 16,
-  },
-  campusButton: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 2,
-    borderColor: '#e5e7eb',
-  },
-  campusButtonActive: {
-    borderColor: '#4f46e5',
-    backgroundColor: '#e0e7ff',
-  },
-  campusName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
-    marginBottom: 4,
-  },
-  campusNameActive: {
-    color: '#4f46e5',
-  },
-  campusLocation: {
-    fontSize: 14,
-    color: '#6b7280',
-  },
-  campusLocationActive: {
-    color: '#6366f1',
-  },
-  activeBadge: {
-    backgroundColor: '#4f46e5',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-  },
-  activeBadgeText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  locationInfo: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 16,
-  },
-  locationInfoText: {
-    fontSize: 14,
-    color: '#6b7280',
-  },
-  bottomNav: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingBottom: 24,
-    borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
-    backgroundColor: '#fff',
-  },
-  navButton: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  navIcon: {
-    fontSize: 24,
-    marginBottom: 4,
-  },
-  navIconActive: {
-    opacity: 1,
-  },
-  navText: {
-    fontSize: 12,
-    color: '#6b7280',
-  },
-  navTextActive: {
-    color: '#4f46e5',
-    fontWeight: '600',
-  },
-});
 
 export default StudySpotFinderApp;
