@@ -1,612 +1,972 @@
+// React Native Study Spot Finder App
+
 import React, { useState, useEffect } from 'react';
-import { MapPin, Wifi, Zap, Volume2, Clock, Navigation, X, Filter, Coffee, BookOpen, Trees, Users, Sparkles, Loader2 } from 'lucide-react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  TextInput,
+  ActivityIndicator,
+  Alert,
+} from 'react-native';
+import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
+import * as Location from 'expo-location';
 
-const studySpots = [
-  {
-    id: 1,
-    name: "Odegaard Undergraduate Library",
-    type: "library",
-    lat: 47.6565,
-    lng: -122.3105,
-    noise: "quiet",
-    outlets: "many",
-    wifi: "excellent",
-    busyness: 65,
-    hours: "24/7",
-    image: "https://images.unsplash.com/photo-1521587760476-6c12a4b040da?w=800&q=80",
-    description: "Modern study space with collaborative areas and quiet zones",
-    amenities: ["24/7 access", "Group rooms", "Printing", "Cafe nearby"]
-  },
-  {
-    id: 2,
-    name: "Suzzallo Library Reading Room",
-    type: "library",
-    lat: 47.6559,
-    lng: -122.3084,
-    noise: "silent",
-    outlets: "some",
-    wifi: "excellent",
-    busyness: 80,
-    hours: "8am-12am",
-    image: "https://images.unsplash.com/photo-1568667256549-094345857637?w=800&q=80",
-    description: "Iconic Gothic reading room - perfect for deep focus",
-    amenities: ["Historic architecture", "Natural light", "Individual desks"]
-  },
-  {
-    id: 3,
-    name: "Paccar Hall Atrium",
-    type: "quiet",
-    lat: 47.6532,
-    lng: -122.3077,
-    noise: "moderate",
-    outlets: "many",
-    wifi: "excellent",
-    busyness: 45,
-    hours: "7am-10pm",
-    image: "https://images.unsplash.com/photo-1497366216548-37526070297c?w=800&q=80",
-    description: "Modern business school with comfortable seating",
-    amenities: ["Natural light", "Lounge seating", "Whiteboards"]
-  },
-  {
-    id: 4,
-    name: "The HUB Starbucks Area",
-    type: "cafe",
-    lat: 47.6555,
-    lng: -122.3055,
-    noise: "lively",
-    outlets: "some",
-    wifi: "good",
-    busyness: 90,
-    hours: "7am-9pm",
-    image: "https://images.unsplash.com/photo-1554118811-1e0d58224f24?w=800&q=80",
-    description: "Social study spot with coffee and food options",
-    amenities: ["Coffee", "Food nearby", "Social atmosphere", "Central location"]
-  },
-  {
-    id: 5,
-    name: "Allen Library",
-    type: "library",
-    lat: 47.6554,
-    lng: -122.3090,
-    noise: "quiet",
-    outlets: "many",
-    wifi: "excellent",
-    busyness: 55,
-    hours: "8am-12am",
-    image: "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?w=800&q=80",
-    description: "Large library with plenty of individual study spaces",
-    amenities: ["Multiple floors", "Study rooms", "Computers available"]
-  },
-  {
-    id: 6,
-    name: "Red Square (Outdoor)",
-    type: "outdoor",
-    lat: 47.6565,
-    lng: -122.3075,
-    noise: "moderate",
-    outlets: "none",
-    wifi: "good",
-    busyness: 30,
-    hours: "Always open",
-    image: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=800&q=80",
-    description: "Iconic outdoor space for studying on nice days",
-    amenities: ["Fresh air", "Scenic views", "Plenty of seating"]
-  },
-  {
-    id: 7,
-    name: "Mary Gates Hall Commons",
-    type: "quiet",
-    lat: 47.6553,
-    lng: -122.3067,
-    noise: "quiet",
-    outlets: "many",
-    wifi: "excellent",
-    busyness: 50,
-    hours: "7am-11pm",
-    image: "https://images.unsplash.com/photo-1497366811353-6870744d04b2?w=800&q=80",
-    description: "Comfortable study lounges with great natural light",
-    amenities: ["Collaborative spaces", "Individual desks", "Modern"]
-  },
-  {
-    id: 8,
-    name: "Communications Building Lobby",
-    type: "quiet",
-    lat: 47.6545,
-    lng: -122.3080,
-    noise: "quiet",
-    outlets: "some",
-    wifi: "excellent",
-    busyness: 35,
-    hours: "7am-10pm",
-    image: "https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=800&q=80",
-    description: "Hidden gem with comfortable seating and quiet atmosphere",
-    amenities: ["Less crowded", "Comfortable chairs", "Good lighting"]
-  }
-];
+// Your Anthropic API key - replace with your actual key or use environment variable
+const ANTHROPIC_API_KEY = process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY || 'your-api-key-here';
 
-const SpotMarker = ({ spot, isSelected, onClick, rank }) => {
-  const colors = {
-    library: "bg-blue-500",
-    cafe: "bg-orange-500",
-    outdoor: "bg-green-500",
-    quiet: "bg-purple-500"
-  };
+const StudySpotFinderApp = () => {
+  const [activeTab, setActiveTab] = useState('map');
+  const [selectedCampus, setSelectedCampus] = useState('uw');
+  const [userLocation, setUserLocation] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [aiRecommendations, setAiRecommendations] = useState(null);
+  const [manualLat, setManualLat] = useState('');
+  const [manualLng, setManualLng] = useState('');
 
-  return (
-    <div
-      onClick={onClick}
-      className={`absolute transform -translate-x-1/2 -translate-y-full cursor-pointer transition-all duration-300 ${
-        isSelected ? 'scale-125 z-20' : 'scale-100 hover:scale-110 z-10'
-      }`}
-      style={{
-        left: `${((spot.lng + 122.31) / 0.02) * 100}%`,
-        top: `${((47.66 - spot.lat) / 0.01) * 100}%`,
-      }}
-    >
-      <div className="relative">
-        {rank !== null && (
-          <div className="absolute -top-2 -right-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center shadow-lg z-10">
-            {rank}
-          </div>
-        )}
-        <div className={`${colors[spot.type]} rounded-full p-2 shadow-lg ${isSelected ? 'animate-pulse' : ''}`}>
-          <MapPin className="w-5 h-5 text-white" fill="white" />
-        </div>
-      </div>
-    </div>
-  );
-};
-
-const App = () => {
-  const [selectedSpot, setSelectedSpot] = useState(null);
-  const [showFilters, setShowFilters] = useState(false);
-  const [filters, setFilters] = useState({
-    outlets: false,
-    quiet: false,
-    cafe: false,
-    outdoor: false,
-    library: false
-  });
-  const [userLocation] = useState({ lat: 47.6555, lng: -122.3075 });
-  const [aiRecommendations, setAiRecommendations] = useState([]);
-  const [isLoadingAI, setIsLoadingAI] = useState(false);
-  const [aiReasoning, setAiReasoning] = useState('');
-  const [showAIPanel, setShowAIPanel] = useState(false);
-
-  const filteredSpots = studySpots.filter(spot => {
-    if (filters.quiet && spot.noise !== 'quiet' && spot.noise !== 'silent') return false;
-    if (filters.cafe && spot.type !== 'cafe') return false;
-    if (filters.outdoor && spot.type !== 'outdoor') return false;
-    if (filters.library && spot.type !== 'library') return false;
-    if (filters.outlets && spot.outlets === 'none') return false;
-    return true;
-  });
-
-  const calculateDistance = (lat1, lng1, lat2, lng2) => {
-    const R = 6371e3;
-    const φ1 = lat1 * Math.PI / 180;
-    const φ2 = lat2 * Math.PI / 180;
-    const Δφ = (lat2 - lat1) * Math.PI / 180;
-    const Δλ = (lng2 - lng1) * Math.PI / 180;
-    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
-              Math.cos(φ1) * Math.cos(φ2) *
-              Math.sin(Δλ/2) * Math.sin(Δλ/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    return R * c;
-  };
-
-  const getWalkingTime = (spot) => {
-    const distance = calculateDistance(userLocation.lat, userLocation.lng, spot.lat, spot.lng);
-    return Math.round(distance / 80);
-  };
-
-  const getAIRecommendations = async () => {
-    setIsLoadingAI(true);
-    setShowAIPanel(true);
-    
-    try {
-      const currentTime = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-      const currentDay = new Date().toLocaleDateString('en-US', { weekday: 'long' });
-      
-      const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY;
-      if (!apiKey) {
-        throw new Error('Anthropic API key not found. Please set VITE_ANTHROPIC_API_KEY in your .env file');
-      }
-
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-api-key": apiKey,
-          "anthropic-version": "2023-06-01",
-        },
-        body: JSON.stringify({
-          model: "claude-3-5-sonnet-20241022",
-          max_tokens: 1000,
-          messages: [
-            {
-              role: "user",
-              content: `You are a UW campus expert helping students find the perfect study spot.
-
-Study spots available:
-${JSON.stringify(studySpots, null, 2)}
-
-User's current location: Red Square (${userLocation.lat}, ${userLocation.lng})
-Current time: ${currentTime}
-Current day: ${currentDay}
-User preferences: ${JSON.stringify(filters)}
-
-Analyze these study spots and rank them from BEST to WORST for studying right now. Consider:
-1. Walking distance from user's location (closer is better)
-2. Likely current busyness (consider time of day and day of week)
-3. User's preferences from filters
-4. Appropriate atmosphere for this time of day
-5. Availability of amenities
-
-Respond with ONLY a JSON object in this exact format (no markdown, no backticks):
-{
-  "rankedSpotIds": [1, 3, 7, 2, 5, 8, 4, 6],
-  "topRecommendation": 1,
-  "reasoning": "Brief explanation of why the top 3 spots are recommended right now"
-}`
-            }
-          ],
-        })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          errorData.error?.message || 
-          `API request failed: ${response.status} ${response.statusText}`
-        );
-      }
-
-      const data = await response.json();
-      
-      if (!data.content || !data.content[0] || !data.content[0].text) {
-        throw new Error('Invalid response format from API');
-      }
-
-      const text = data.content[0].text.trim();
-      const cleanText = text.replace(/```json\n?|\n?```/g, '').trim();
-      const result = JSON.parse(cleanText);
-      
-      if (!result.rankedSpotIds || !result.topRecommendation || !result.reasoning) {
-        throw new Error('Invalid response structure from AI');
-      }
-      
-      setAiRecommendations(result.rankedSpotIds);
-      setAiReasoning(result.reasoning);
-      
-      // Auto-select top recommendation
-      const topSpot = studySpots.find(s => s.id === result.topRecommendation);
-      if (topSpot) {
-        setSelectedSpot(topSpot);
-      }
-    } catch (error) {
-      console.error('AI recommendation error:', error);
-      const errorMessage = error.message || 'Unknown error occurred';
-      setAiReasoning(
-        errorMessage.includes('API key') 
-          ? 'API key not configured. Please set VITE_ANTHROPIC_API_KEY in your .env file.'
-          : `Error: ${errorMessage}`
-      );
-    } finally {
-      setIsLoadingAI(false);
+  const campuses = {
+    uw: {
+      name: 'University of Washington',
+      location: 'Seattle, WA',
+      coords: { latitude: 47.6553, longitude: -122.3080, latitudeDelta: 0.01, longitudeDelta: 0.01 }
+    },
+    umd: {
+      name: 'University of Maryland',
+      location: 'College Park, MD',
+      coords: { latitude: 38.9869, longitude: -76.9426, latitudeDelta: 0.01, longitudeDelta: 0.01 }
     }
   };
 
-  const getSpotRank = (spotId) => {
-    if (aiRecommendations.length === 0) return null;
-    const rank = aiRecommendations.indexOf(spotId);
-    return rank >= 0 ? rank + 1 : null;
+  const studySpots = {
+    uw: [
+      {
+        id: 1,
+        name: 'Suzzallo Library - Reading Room',
+        description: 'Gothic-style reading room with high ceilings and natural light. Perfect for focused studying.',
+        coordinate: { latitude: 47.6563, longitude: -122.3085 },
+        noise: 'quiet',
+        capacity: '6+ people',
+        hours: '7 AM - 2 AM',
+        tags: ['wifi', 'quiet', 'outlets', 'natural-light'],
+      },
+      {
+        id: 2,
+        name: 'Odegaard Library',
+        description: 'Modern study spaces with group rooms and collaborative areas. Great for group work.',
+        coordinate: { latitude: 47.6565, longitude: -122.3095 },
+        noise: 'moderate',
+        capacity: '6+ people',
+        hours: '24/7',
+        tags: ['wifi', 'group-rooms', 'outlets', 'cafe'],
+      },
+      {
+        id: 3,
+        name: 'Allen Library',
+        description: 'Quiet floors with individual study carrels and modern facilities.',
+        coordinate: { latitude: 47.6555, longitude: -122.3075 },
+        noise: 'quiet',
+        capacity: '6+ people',
+        hours: '7 AM - 12 AM',
+        tags: ['wifi', 'quiet', 'outlets', 'study-carrels'],
+      },
+      {
+        id: 4,
+        name: 'Communications Building',
+        description: 'Open study areas with collaborative spaces and good wifi.',
+        coordinate: { latitude: 47.6548, longitude: -122.3088 },
+        noise: 'moderate',
+        capacity: '6+ people',
+        hours: '7 AM - 10 PM',
+        tags: ['wifi', 'group-work', 'outlets', 'collaborative'],
+      },
+      {
+        id: 5,
+        name: 'HUB Study Lounge',
+        description: 'Casual study space with comfortable seating and nearby food options.',
+        coordinate: { latitude: 47.6557, longitude: -122.3068 },
+        noise: 'lively',
+        capacity: '6+ people',
+        hours: '7 AM - 11 PM',
+        tags: ['wifi', 'food-nearby', 'comfortable', 'social'],
+      }
+    ],
+    umd: [
+      {
+        id: 6,
+        name: 'McKeldin Library',
+        description: 'Main library with multiple floors and collaborative study areas.',
+        coordinate: { latitude: 38.9859, longitude: -76.9450 },
+        noise: 'moderate',
+        capacity: '6+ people',
+        hours: '24/7',
+        tags: ['wifi', 'group-rooms', 'outlets', 'cafe'],
+      },
+      {
+        id: 7,
+        name: 'Hornbake Library',
+        description: 'Specialized collections with quiet study spaces.',
+        coordinate: { latitude: 38.9876, longitude: -76.9436 },
+        noise: 'quiet',
+        capacity: '6+ people',
+        hours: '8 AM - 12 AM',
+        tags: ['wifi', 'quiet', 'outlets', 'special-collections'],
+      },
+    ]
   };
 
-  const displayedSpots = aiRecommendations.length > 0 
-    ? aiRecommendations.map(id => studySpots.find(s => s.id === id)).filter(Boolean)
-    : filteredSpots;
+  const quickLocations = {
+    uw: [
+      { name: 'Red Square', coords: { latitude: 47.6553, longitude: -122.3080 } },
+      { name: 'The Ave', coords: { latitude: 47.6615, longitude: -122.3130 } },
+      { name: 'Burke Museum', coords: { latitude: 47.6560, longitude: -122.3110 } },
+      { name: 'Drumheller Fountain', coords: { latitude: 47.6533, longitude: -122.3050 } },
+    ],
+    umd: [
+      { name: 'Testudo Statue', coords: { latitude: 38.9869, longitude: -76.9426 } },
+      { name: 'Memorial Chapel', coords: { latitude: 38.9881, longitude: -76.9412 } },
+    ]
+  };
+
+  // Request location permissions and get user location
+  const requestLocationPermission = async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'Location permission is required for recommendations');
+        return;
+      }
+
+      setLoading(true);
+      const location = await Location.getCurrentPositionAsync({});
+      setUserLocation({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+      });
+      setManualLat(location.coords.latitude.toString());
+      setManualLng(location.coords.longitude.toString());
+      setLoading(false);
+    } catch (error) {
+      setLoading(false);
+      Alert.alert('Error', 'Could not get location');
+    }
+  };
+
+  // Get AI recommendations using Anthropic API
+  const getAIRecommendations = async () => {
+    const location = userLocation || (manualLat && manualLng ? {
+      latitude: parseFloat(manualLat),
+      longitude: parseFloat(manualLng)
+    } : null);
+
+    if (!location) {
+      Alert.alert('Location Required', 'Please set your location first');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      const spots = studySpots[selectedCampus];
+      const campusInfo = campuses[selectedCampus];
+
+      const prompt = `You are an AI assistant helping students find the best study spots. Based on the user's location and preferences, recommend the top 3 study spots from this list.
+
+User Location: ${location.latitude}, ${location.longitude}
+Campus: ${campusInfo.name}
+
+Available Study Spots:
+${spots.map(spot => `
+- ${spot.name}
+  Location: ${spot.coordinate.latitude}, ${spot.coordinate.longitude}
+  Description: ${spot.description}
+  Noise Level: ${spot.noise}
+  Hours: ${spot.hours}
+  Amenities: ${spot.tags.join(', ')}
+`).join('\n')}
+
+Please provide:
+1. Top 3 recommended spots based on proximity and quality
+2. Brief reasoning for each recommendation (1-2 sentences)
+3. Best times to visit each spot
+
+Format your response as JSON:
+{
+  "recommendations": [
+    {
+      "spotName": "name",
+      "reason": "why this spot",
+      "bestTime": "suggested time",
+      "distance": "approximate distance"
+    }
+  ]
+}`;
+
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': ANTHROPIC_API_KEY,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1000,
+          messages: [
+            { role: 'user', content: prompt }
+          ],
+        }),
+      });
+
+      const data = await response.json();
+      
+      if (data.content && data.content[0] && data.content[0].text) {
+        const text = data.content[0].text;
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const recommendations = JSON.parse(jsonMatch[0]);
+          setAiRecommendations(recommendations);
+        } else {
+          setAiRecommendations({ raw: text });
+        }
+      }
+
+      setLoading(false);
+    } catch (error) {
+      setLoading(false);
+      Alert.alert('Error', 'Failed to get recommendations: ' + error.message);
+    }
+  };
+
+  // Map View Component
+  const MapViewComponent = () => (
+    <View style={styles.flex1}>
+      <MapView
+        style={styles.map}
+        provider={PROVIDER_GOOGLE}
+        initialRegion={campuses[selectedCampus].coords}
+        showsUserLocation
+        showsMyLocationButton
+      >
+        {studySpots[selectedCampus].map(spot => (
+          <Marker
+            key={spot.id}
+            coordinate={spot.coordinate}
+            title={spot.name}
+            description={spot.description}
+            pinColor={spot.noise === 'quiet' ? 'green' : spot.noise === 'moderate' ? 'orange' : 'red'}
+          />
+        ))}
+      </MapView>
+    </View>
+  );
+
+  // AI Picks View Component
+  const AIPicksView = () => (
+    <ScrollView style={styles.flex1}>
+      <View style={styles.headerGradient}>
+        <Text style={styles.headerTitle}>✨ AI Recommendations</Text>
+        <Text style={styles.headerSubtitle}>Personalized study spots for you</Text>
+      </View>
+
+      <View style={styles.content}>
+        {!aiRecommendations ? (
+          <View style={styles.aiCard}>
+            <View style={styles.iconCircle}>
+              <Text style={styles.iconText}>📍</Text>
+            </View>
+            <Text style={styles.cardTitle}>Set Your Location</Text>
+            <Text style={styles.cardDescription}>
+              Tell us where you are to get personalized recommendations
+            </Text>
+
+            <View style={styles.locationCard}>
+              <Text style={styles.sectionTitle}>📍 Your Location</Text>
+
+              <Text style={styles.label}>Latitude</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g., 47.6553"
+                value={manualLat}
+                onChangeText={setManualLat}
+                keyboardType="numeric"
+              />
+
+              <Text style={styles.label}>Longitude</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g., -122.3080"
+                value={manualLng}
+                onChangeText={setManualLng}
+                keyboardType="numeric"
+              />
+
+              <View style={styles.buttonRow}>
+                <TouchableOpacity
+                  style={[styles.button, styles.buttonPrimary]}
+                  onPress={getAIRecommendations}
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <ActivityIndicator color="white" />
+                  ) : (
+                    <Text style={styles.buttonText}>Get Recommendations</Text>
+                  )}
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.button, styles.buttonSecondary]}
+                  onPress={requestLocationPermission}
+                  disabled={loading}
+                >
+                  <Text style={styles.buttonTextDark}>📍 Use My Location</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <Text style={styles.quickLocationsLabel}>Quick locations:</Text>
+            <View style={styles.quickLocationButtons}>
+              {quickLocations[selectedCampus].map(loc => (
+                <TouchableOpacity
+                  key={loc.name}
+                  style={styles.quickLocationButton}
+                  onPress={() => {
+                    setManualLat(loc.coords.latitude.toString());
+                    setManualLng(loc.coords.longitude.toString());
+                  }}
+                >
+                  <Text style={styles.quickLocationText}>{loc.name}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        ) : (
+          <View>
+            <Text style={styles.recommendationsTitle}>Your Personalized Recommendations</Text>
+            {aiRecommendations.recommendations ? (
+              aiRecommendations.recommendations.map((rec, idx) => (
+                <View key={idx} style={styles.recommendationCard}>
+                  <Text style={styles.recNumber}>#{idx + 1}</Text>
+                  <Text style={styles.recName}>{rec.spotName}</Text>
+                  <Text style={styles.recReason}>{rec.reason}</Text>
+                  <Text style={styles.recDetail}>🕐 Best Time: {rec.bestTime}</Text>
+                  <Text style={styles.recDetail}>📍 Distance: {rec.distance}</Text>
+                </View>
+              ))
+            ) : (
+              <Text style={styles.recReason}>{aiRecommendations.raw}</Text>
+            )}
+            <TouchableOpacity
+              style={[styles.button, styles.buttonPrimary]}
+              onPress={() => setAiRecommendations(null)}
+            >
+              <Text style={styles.buttonText}>Get New Recommendations</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+    </ScrollView>
+  );
+
+  // All Spots View Component
+  const AllSpotsView = () => {
+    const [filter, setFilter] = useState('all');
+    const spots = studySpots[selectedCampus];
+    const filteredSpots = filter === 'all' ? spots : spots.filter(s => s.noise === filter);
+
+    return (
+      <ScrollView style={styles.flex1}>
+        <View style={styles.content}>
+          <Text style={styles.pageTitle}>All Study Spots</Text>
+          <Text style={styles.pageSubtitle}>{campuses[selectedCampus].name} - {spots.length} locations</Text>
+
+          <TextInput
+            style={styles.searchInput}
+            placeholder="🔍 Search study spots..."
+          />
+
+          <View style={styles.filterRow}>
+            {['all', 'quiet', 'moderate', 'lively'].map(f => (
+              <TouchableOpacity
+                key={f}
+                style={[
+                  styles.filterButton,
+                  filter === f && styles.filterButtonActive,
+                  f === 'quiet' && styles.filterQuiet,
+                  f === 'moderate' && styles.filterModerate,
+                  f === 'lively' && styles.filterLively,
+                ]}
+                onPress={() => setFilter(f)}
+              >
+                <Text style={[
+                  styles.filterText,
+                  filter === f && styles.filterTextActive
+                ]}>
+                  {f.charAt(0).toUpperCase() + f.slice(1)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {filteredSpots.map(spot => (
+            <View key={spot.id} style={styles.spotCard}>
+              <Text style={styles.spotName}>{spot.name}</Text>
+              <Text style={styles.spotDescription}>{spot.description}</Text>
+
+              <View style={styles.spotBadges}>
+                <View style={[styles.badge, spot.noise === 'quiet' ? styles.badgeQuiet : spot.noise === 'moderate' ? styles.badgeModerate : styles.badgeLively]}>
+                  <Text style={styles.badgeText}>🔊 {spot.noise}</Text>
+                </View>
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>👥 {spot.capacity}</Text>
+                </View>
+                <View style={styles.badge}>
+                  <Text style={styles.badgeText}>🕐 {spot.hours}</Text>
+                </View>
+              </View>
+
+              <View style={styles.spotTags}>
+                {spot.tags.map(tag => (
+                  <View key={tag} style={styles.tag}>
+                    <Text style={styles.tagText}>{tag}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          ))}
+        </View>
+      </ScrollView>
+    );
+  };
+
+  // Settings View Component
+  const SettingsView = () => (
+    <ScrollView style={styles.flex1}>
+      <View style={styles.content}>
+        <Text style={styles.pageTitle}>⚙️ Settings</Text>
+        <Text style={styles.pageSubtitle}>Customize your experience</Text>
+
+        <View style={styles.settingsCard}>
+          <Text style={styles.settingsTitle}>📍 Campus</Text>
+          <Text style={styles.settingsDescription}>Select which campus you want to explore</Text>
+
+          <TouchableOpacity
+            style={[styles.campusButton, selectedCampus === 'uw' && styles.campusButtonActive]}
+            onPress={() => setSelectedCampus('uw')}
+          >
+            <View>
+              <Text style={[styles.campusName, selectedCampus === 'uw' && styles.campusNameActive]}>
+                University of Washington
+              </Text>
+              <Text style={[styles.campusLocation, selectedCampus === 'uw' && styles.campusLocationActive]}>
+                Seattle, WA
+              </Text>
+            </View>
+            {selectedCampus === 'uw' && (
+              <View style={styles.activeBadge}>
+                <Text style={styles.activeBadgeText}>Active</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.campusButton, selectedCampus === 'umd' && styles.campusButtonActive]}
+            onPress={() => setSelectedCampus('umd')}
+          >
+            <View>
+              <Text style={[styles.campusName, selectedCampus === 'umd' && styles.campusNameActive]}>
+                University of Maryland
+              </Text>
+              <Text style={[styles.campusLocation, selectedCampus === 'umd' && styles.campusLocationActive]}>
+                College Park, MD
+              </Text>
+            </View>
+            {selectedCampus === 'umd' && (
+              <View style={styles.activeBadge}>
+                <Text style={styles.activeBadgeText}>Active</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.settingsCard}>
+          <Text style={styles.settingsTitle}>📍 Your Location</Text>
+          <View style={styles.locationInfo}>
+            <Text style={styles.locationInfoText}>
+              {userLocation || (manualLat && manualLng)
+                ? `Location set: ${manualLat || userLocation?.latitude}, ${manualLng || userLocation?.longitude}`
+                : 'No location set. Set your location to get personalized recommendations.'}
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={[styles.button, styles.buttonPrimary]}
+            onPress={requestLocationPermission}
+          >
+            <Text style={styles.buttonText}>Update Location</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </ScrollView>
+  );
 
   return (
-    <div className="h-screen w-full bg-gradient-to-br from-blue-50 to-purple-50 flex flex-col overflow-hidden">
+    <View style={styles.container}>
       {/* Header */}
-      <div className="bg-white/80 backdrop-blur-md shadow-sm z-30 px-6 py-4">
-        <div className="flex items-center justify-between max-w-7xl mx-auto">
-          <div>
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              UW Study Spots
-            </h1>
-            <p className="text-sm text-gray-600 mt-1">AI-powered study space recommendations</p>
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={getAIRecommendations}
-              disabled={isLoadingAI}
-              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-white rounded-full hover:shadow-lg transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoadingAI ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Analyzing...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4" />
-                  AI Recommend
-                </>
-              )}
-            </button>
-            <button
-              onClick={() => setShowFilters(!showFilters)}
-              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-500 text-white rounded-full hover:shadow-lg transition-all duration-300 hover:scale-105"
-            >
-              <Filter className="w-4 h-4" />
-              Filters
-            </button>
-          </div>
-        </div>
-      </div>
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.appTitle}>Study Spot Finder</Text>
+          <Text style={styles.appSubtitle}>{campuses[selectedCampus].name}</Text>
+        </View>
+        <View style={styles.spotsBadge}>
+          <Text style={styles.spotsBadgeText}>{studySpots[selectedCampus].length} spots</Text>
+        </View>
+      </View>
 
-      {/* Filter Panel */}
-      {showFilters && (
-        <div className="absolute top-20 right-6 bg-white rounded-2xl shadow-2xl p-6 z-40 w-80 animate-in slide-in-from-top-5 duration-300">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-lg">Filter Study Spots</h3>
-            <button onClick={() => setShowFilters(false)} className="text-gray-400 hover:text-gray-600">
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-          <div className="space-y-3">
-            {[
-              { key: 'outlets', label: 'Need Outlets', icon: Zap },
-              { key: 'quiet', label: 'Quiet Spaces', icon: Volume2 },
-              { key: 'cafe', label: 'Coffee Nearby', icon: Coffee },
-              { key: 'library', label: 'Libraries Only', icon: BookOpen },
-              { key: 'outdoor', label: 'Outdoor Spots', icon: Trees }
-            ].map(({ key, label, icon: Icon }) => (
-              <label key={key} className="flex items-center gap-3 cursor-pointer group">
-                <input
-                  type="checkbox"
-                  checked={filters[key]}
-                  onChange={(e) => {
-                    setFilters({ ...filters, [key]: e.target.checked });
-                    setAiRecommendations([]); // Clear AI recommendations when filters change
-                  }}
-                  className="w-5 h-5 rounded border-gray-300 text-blue-500 focus:ring-2 focus:ring-blue-500"
-                />
-                <Icon className="w-5 h-5 text-gray-400 group-hover:text-blue-500 transition-colors" />
-                <span className="text-gray-700 group-hover:text-blue-600 transition-colors">{label}</span>
-              </label>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Content */}
+      {activeTab === 'map' && <MapViewComponent />}
+      {activeTab === 'ai-picks' && <AIPicksView />}
+      {activeTab === 'all-spots' && <AllSpotsView />}
+      {activeTab === 'settings' && <SettingsView />}
 
-      {/* AI Recommendations Panel */}
-      {showAIPanel && (
-        <div className="absolute top-20 left-6 bg-white rounded-2xl shadow-2xl p-6 z-40 w-96 animate-in slide-in-from-left-5 duration-300">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-yellow-500" />
-              <h3 className="font-semibold text-lg">AI Recommendations</h3>
-            </div>
-            <button onClick={() => setShowAIPanel(false)} className="text-gray-400 hover:text-gray-600">
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-          
-          {isLoadingAI ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
-            </div>
-          ) : aiReasoning ? (
-            <div>
-              <p className="text-gray-700 text-sm leading-relaxed mb-4">{aiReasoning}</p>
-              <div className="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4">
-                <h4 className="font-semibold text-sm text-gray-900 mb-2">Top 3 Recommendations:</h4>
-                <ol className="space-y-2">
-                  {aiRecommendations.slice(0, 3).map((spotId, index) => {
-                    const spot = studySpots.find(s => s.id === spotId);
-                    return (
-                      <li key={spotId} className="flex items-center gap-2">
-                        <span className="flex-shrink-0 w-6 h-6 bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-xs font-bold rounded-full flex items-center justify-center">
-                          {index + 1}
-                        </span>
-                        <button
-                          onClick={() => setSelectedSpot(spot)}
-                          className="text-sm text-blue-600 hover:text-blue-800 font-medium text-left"
-                        >
-                          {spot?.name}
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ol>
-              </div>
-            </div>
-          ) : (
-            <p className="text-gray-500 text-sm">Click "AI Recommend" to get personalized study spot suggestions!</p>
-          )}
-        </div>
-      )}
+      {/* Bottom Navigation */}
+      <View style={styles.bottomNav}>
+        <TouchableOpacity
+          style={styles.navButton}
+          onPress={() => setActiveTab('map')}
+        >
+          <Text style={[styles.navIcon, activeTab === 'map' && styles.navIconActive]}>🗺️</Text>
+          <Text style={[styles.navText, activeTab === 'map' && styles.navTextActive]}>Map</Text>
+        </TouchableOpacity>
 
-      {/* Map Container */}
-      <div className="flex-1 relative">
-        {/* Map Background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-100 to-purple-100">
-          <div className="absolute inset-0 opacity-20">
-            <div className="absolute inset-0 grid grid-cols-12 grid-rows-12">
-              {[...Array(144)].map((_, i) => (
-                <div key={i} className="border border-gray-300"></div>
-              ))}
-            </div>
-          </div>
-          
-          {/* User Location */}
-          <div
-            className="absolute transform -translate-x-1/2 -translate-y-1/2 z-10"
-            style={{
-              left: `${((userLocation.lng + 122.31) / 0.02) * 100}%`,
-              top: `${((47.66 - userLocation.lat) / 0.01) * 100}%`,
-            }}
-          >
-            <div className="relative">
-              <div className="absolute inset-0 bg-blue-400 rounded-full animate-ping opacity-75"></div>
-              <div className="relative bg-blue-500 rounded-full p-2 shadow-lg">
-                <Navigation className="w-4 h-4 text-white" fill="white" />
-              </div>
-            </div>
-          </div>
+        <TouchableOpacity
+          style={styles.navButton}
+          onPress={() => setActiveTab('ai-picks')}
+        >
+          <Text style={[styles.navIcon, activeTab === 'ai-picks' && styles.navIconActive]}>✨</Text>
+          <Text style={[styles.navText, activeTab === 'ai-picks' && styles.navTextActive]}>AI Picks</Text>
+        </TouchableOpacity>
 
-          {/* Study Spot Markers */}
-          {displayedSpots.map((spot) => (
-            <SpotMarker
-              key={spot.id}
-              spot={spot}
-              isSelected={selectedSpot?.id === spot.id}
-              onClick={() => setSelectedSpot(spot)}
-              rank={getSpotRank(spot.id)}
-            />
-          ))}
-        </div>
+        <TouchableOpacity
+          style={styles.navButton}
+          onPress={() => setActiveTab('all-spots')}
+        >
+          <Text style={[styles.navIcon, activeTab === 'all-spots' && styles.navIconActive]}>📋</Text>
+          <Text style={[styles.navText, activeTab === 'all-spots' && styles.navTextActive]}>All Spots</Text>
+        </TouchableOpacity>
 
-        {/* Legend */}
-        <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm rounded-xl p-4 shadow-lg z-20">
-          <h4 className="font-semibold text-sm mb-2 text-gray-700">Legend</h4>
-          <div className="space-y-2 text-xs">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-              <span className="text-gray-600">Library</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
-              <span className="text-gray-600">Cafe</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-              <span className="text-gray-600">Outdoor</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
-              <span className="text-gray-600">Quiet Space</span>
-            </div>
-            {aiRecommendations.length > 0 && (
-              <div className="flex items-center gap-2 pt-2 border-t border-gray-200 mt-2">
-                <div className="w-3 h-3 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full"></div>
-                <span className="text-gray-600">AI Ranked</span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Location Card */}
-        {selectedSpot && (
-          <div className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl shadow-2xl z-30 animate-in slide-in-from-bottom-5 duration-300 max-h-[60vh] overflow-y-auto">
-            <div className="relative">
-              <button
-                onClick={() => setSelectedSpot(null)}
-                className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm rounded-full p-2 shadow-lg hover:bg-gray-100 transition-colors z-10"
-              >
-                <X className="w-5 h-5 text-gray-600" />
-              </button>
-              
-              {getSpotRank(selectedSpot.id) && (
-                <div className="absolute top-4 left-4 bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-3 py-1 rounded-full font-bold text-sm shadow-lg z-10 flex items-center gap-1">
-                  <Sparkles className="w-4 h-4" />
-                  #{getSpotRank(selectedSpot.id)} AI Pick
-                </div>
-              )}
-              
-              <img
-                src={selectedSpot.image}
-                alt={selectedSpot.name}
-                className="w-full h-48 object-cover"
-              />
-              
-              <div className="p-6">
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <h2 className="text-2xl font-bold text-gray-900 mb-1">
-                      {selectedSpot.name}
-                    </h2>
-                    <p className="text-gray-600">{selectedSpot.description}</p>
-                  </div>
-                </div>
-
-                {/* Quick Stats */}
-                <div className="grid grid-cols-2 gap-3 mb-4">
-                  <div className="bg-blue-50 rounded-xl p-3">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Navigation className="w-4 h-4 text-blue-600" />
-                      <span className="text-xs font-medium text-blue-900">Walk Time</span>
-                    </div>
-                    <p className="text-lg font-bold text-blue-600">{getWalkingTime(selectedSpot)} min</p>
-                  </div>
-                  
-                  <div className="bg-purple-50 rounded-xl p-3">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Users className="w-4 h-4 text-purple-600" />
-                      <span className="text-xs font-medium text-purple-900">Busyness</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 bg-purple-200 rounded-full h-2">
-                        <div
-                          className="bg-purple-600 h-2 rounded-full transition-all duration-500"
-                          style={{ width: `${selectedSpot.busyness}%` }}
-                        ></div>
-                      </div>
-                      <span className="text-sm font-bold text-purple-600">{selectedSpot.busyness}%</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Info Grid */}
-                <div className="grid grid-cols-4 gap-3 mb-4">
-                  <div className="text-center p-2 bg-gray-50 rounded-lg">
-                    <Volume2 className="w-5 h-5 mx-auto mb-1 text-gray-600" />
-                    <p className="text-xs text-gray-600 capitalize">{selectedSpot.noise}</p>
-                  </div>
-                  <div className="text-center p-2 bg-gray-50 rounded-lg">
-                    <Zap className="w-5 h-5 mx-auto mb-1 text-gray-600" />
-                    <p className="text-xs text-gray-600 capitalize">{selectedSpot.outlets}</p>
-                  </div>
-                  <div className="text-center p-2 bg-gray-50 rounded-lg">
-                    <Wifi className="w-5 h-5 mx-auto mb-1 text-gray-600" />
-                    <p className="text-xs text-gray-600 capitalize">{selectedSpot.wifi}</p>
-                  </div>
-                  <div className="text-center p-2 bg-gray-50 rounded-lg">
-                    <Clock className="w-5 h-5 mx-auto mb-1 text-gray-600" />
-                    <p className="text-xs text-gray-600">{selectedSpot.hours.split('-')[0]}</p>
-                  </div>
-                </div>
-
-                {/* Amenities */}
-                <div className="mb-4">
-                  <h3 className="font-semibold text-sm text-gray-900 mb-2">Amenities</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedSpot.amenities.map((amenity, i) => (
-                      <span
-                        key={i}
-                        className="px-3 py-1 bg-gradient-to-r from-blue-50 to-purple-50 text-blue-700 rounded-full text-xs font-medium"
-                      >
-                        {amenity}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Action Button */}
-                <button className="w-full bg-gradient-to-r from-blue-500 to-purple-500 text-white py-4 rounded-xl font-semibold hover:shadow-lg transition-all duration-300 hover:scale-[1.02] flex items-center justify-center gap-2">
-                  <Navigation className="w-5 h-5" />
-                  Get Directions
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
+        <TouchableOpacity
+          style={styles.navButton}
+          onPress={() => setActiveTab('settings')}
+        >
+          <Text style={[styles.navIcon, activeTab === 'settings' && styles.navIconActive]}>⚙️</Text>
+          <Text style={[styles.navText, activeTab === 'settings' && styles.navTextActive]}>Settings</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
   );
 };
 
-export default App;
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  flex1: {
+    flex: 1,
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    paddingTop: 50,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  appTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#111827',
+  },
+  appSubtitle: {
+    fontSize: 14,
+    color: '#6b7280',
+  },
+  spotsBadge: {
+    backgroundColor: '#e0e7ff',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  spotsBadgeText: {
+    color: '#4f46e5',
+    fontWeight: '600',
+  },
+  map: {
+    flex: 1,
+  },
+  headerGradient: {
+    backgroundColor: '#4f46e5',
+    padding: 24,
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#fff',
+    marginBottom: 8,
+  },
+  headerSubtitle: {
+    fontSize: 16,
+    color: '#e0e7ff',
+  },
+  content: {
+    padding: 16,
+  },
+  aiCard: {
+    backgroundColor: '#f9fafb',
+    borderRadius: 16,
+    padding: 24,
+    alignItems: 'center',
+  },
+  iconCircle: {
+    width: 80,
+    height: 80,
+    backgroundColor: '#e0e7ff',
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  iconText: {
+    fontSize: 40,
+  },
+  cardTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  cardDescription: {
+    fontSize: 14,
+    color: '#6b7280',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  locationCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    width: '100%',
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 16,
+  },
+  label: {
+    fontSize: 14,
+    color: '#6b7280',
+    marginBottom: 8,
+  },
+  input: {
+    backgroundColor: '#f9fafb',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  buttonRow: {
+    gap: 8,
+  },
+  button: {
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  buttonPrimary: {
+    backgroundColor: '#111827',
+  },
+  buttonSecondary: {
+    backgroundColor: '#fff',
+    borderWidth: 2,
+    borderColor: '#e5e7eb',
+  },
+  buttonText: {
+    color: '#fff',
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  buttonTextDark: {
+    color: '#111827',
+    fontWeight: '600',
+    fontSize: 16,
+  },
+  quickLocationsLabel: {
+    fontSize: 14,
+    color: '#6b7280',
+    marginBottom: 12,
+  },
+  quickLocationButtons: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    justifyContent: 'center',
+  },
+  quickLocationButton: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  quickLocationText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  recommendationsTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 16,
+  },
+  recommendationCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  recNumber: {
+    fontSize: 14,
+    color: '#4f46e5',
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  recName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  recReason: {
+    fontSize: 14,
+    color: '#6b7280',
+    marginBottom: 8,
+  },
+  recDetail: {
+    fontSize: 14,
+    color: '#6b7280',
+    marginBottom: 4,
+  },
+  pageTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  pageSubtitle: {
+    fontSize: 14,
+    color: '#6b7280',
+    marginBottom: 16,
+  },
+  searchInput: {
+    backgroundColor: '#f9fafb',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  filterRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 16,
+  },
+  filterButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: '#f9fafb',
+  },
+  filterButtonActive: {
+    backgroundColor: '#111827',
+  },
+  filterQuiet: {
+    backgroundColor: '#f0fdf4',
+  },
+  filterModerate: {
+    backgroundColor: '#fef9c3',
+  },
+  filterLively: {
+    backgroundColor: '#fef2f2',
+  },
+  filterText: {
+    fontWeight: '500',
+    color: '#6b7280',
+  },
+  filterTextActive: {
+    color: '#fff',
+  },
+  spotCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  spotName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  spotDescription: {
+    fontSize: 14,
+    color: '#6b7280',
+    marginBottom: 12,
+  },
+  spotBadges: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 12,
+  },
+  badge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    backgroundColor: '#f3f4f6',
+  },
+  badgeQuiet: {
+    backgroundColor: '#dcfce7',
+  },
+  badgeModerate: {
+    backgroundColor: '#fef9c3',
+  },
+  badgeLively: {
+    backgroundColor: '#fee2e2',
+  },
+  badgeText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  spotTags: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  tag: {
+    backgroundColor: '#e0e7ff',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  tagText: {
+    fontSize: 12,
+    color: '#4f46e5',
+    fontWeight: '500',
+  },
+  settingsCard: {
+    backgroundColor: '#f9fafb',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+  },
+  settingsTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  settingsDescription: {
+    fontSize: 14,
+    color: '#6b7280',
+    marginBottom: 16,
+  },
+  campusButton: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 2,
+    borderColor: '#e5e7eb',
+  },
+  campusButtonActive: {
+    borderColor: '#4f46e5',
+    backgroundColor: '#e0e7ff',
+  },
+  campusName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 4,
+  },
+  campusNameActive: {
+    color: '#4f46e5',
+  },
+  campusLocation: {
+    fontSize: 14,
+    color: '#6b7280',
+  },
+  campusLocationActive: {
+    color: '#6366f1',
+  },
+  activeBadge: {
+    backgroundColor: '#4f46e5',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+  },
+  activeBadgeText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  locationInfo: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 16,
+  },
+  locationInfoText: {
+    fontSize: 14,
+    color: '#6b7280',
+  },
+  bottomNav: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingBottom: 24,
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+    backgroundColor: '#fff',
+  },
+  navButton: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  navIcon: {
+    fontSize: 24,
+    marginBottom: 4,
+  },
+  navIconActive: {
+    opacity: 1,
+  },
+  navText: {
+    fontSize: 12,
+    color: '#6b7280',
+  },
+  navTextActive: {
+    color: '#4f46e5',
+    fontWeight: '600',
+  },
+});
+
+export default StudySpotFinderApp;
