@@ -28,10 +28,10 @@ app.post('/api/ai-recommendations', async (req, res) => {
       return res.status(500).json({ error: 'GEMINI_API_KEY not configured on server' });
     }
 
-    // Try gemini-1.5-flash (most commonly available free model)
-    const model = process.env.GEMINI_MODEL || 'gemini-1.5-flash';
-    // Try v1 API first (newer format), fallback to v1beta if needed
-    const apiVersion = 'v1';
+    // Try gemini-1.5-flash-latest (most commonly available free model)
+    const model = process.env.GEMINI_MODEL || 'gemini-1.5-flash-latest';
+    // Use v1beta API (more stable for most models)
+    const apiVersion = 'v1beta';
     const url = `https://generativelanguage.googleapis.com/${apiVersion}/models/${model}:generateContent?key=${apiKey}`;
 
     const response = await fetch(url, {
