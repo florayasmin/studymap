@@ -1,5 +1,3 @@
-// React Native Study Spot Finder App
-
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -14,8 +12,10 @@ import {
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
 
-// Your Anthropic API key - replace with your actual key or use environment variable
-const ANTHROPIC_API_KEY = process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY || 'your-api-key-here';
+// API endpoint - use your backend proxy server URL
+// For local development, use: http://localhost:3001
+// For production, replace with your deployed server URL
+const API_PROXY_URL = process.env.EXPO_PUBLIC_API_PROXY_URL || 'http://localhost:3001';
 
 const StudySpotFinderApp = () => {
   const [activeTab, setActiveTab] = useState('map');
@@ -203,21 +203,19 @@ Format your response as JSON:
   ]
 }`;
 
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
+      // Call our secure backend proxy instead of Anthropic directly
+      const response = await fetch(`${API_PROXY_URL}/api/ai-recommendations`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': ANTHROPIC_API_KEY,
-          'anthropic-version': '2023-06-01',
         },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 1000,
-          messages: [
-            { role: 'user', content: prompt }
-          ],
-        }),
+        body: JSON.stringify({ prompt }),
       });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Server error: ${response.status}`);
+      }
 
       const data = await response.json();
       

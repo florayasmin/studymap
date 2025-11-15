@@ -25,15 +25,24 @@ A React Native mobile application built with Expo that helps students find the b
 npm install
 ```
 
-### Set Up API Key
+### Set Up API Key (Secure Backend Proxy)
 
-Create a `.env` file in the root directory and add your Anthropic API key:
+**🔒 Important:** This app uses a backend proxy to keep your API key secure. The key is never exposed in the mobile app.
 
+1. Create a `.env` file in the root directory:
 ```
-EXPO_PUBLIC_ANTHROPIC_API_KEY=your-api-key-here
+ANTHROPIC_API_KEY=your-api-key-here
+PORT=3001
 ```
 
-Or update the `ANTHROPIC_API_KEY` constant in `src/App.jsx`.
+2. Start the backend proxy server (in a separate terminal):
+```bash
+npm run server
+```
+
+3. The mobile app will automatically connect to `http://localhost:3001`
+
+See `SECURITY.md` for detailed security information.
 
 ### Run the App
 
@@ -68,8 +77,9 @@ The app uses the following key packages:
 - `expo` - Expo framework
 - `expo-location` - For GPS location services
 - `react-native-maps` - For map display
-- `@react-navigation/native` & `@react-navigation/bottom-tabs` - Navigation
-- `@react-native-async-storage/async-storage` - Local storage
+- `express` - Backend proxy server
+- `cors` - CORS middleware for backend
+- `dotenv` - Environment variable management
 
 ## Project Structure
 
@@ -87,7 +97,9 @@ studymap/
 
 - The app requires location permissions to provide personalized recommendations
 - Google Maps requires an API key for production use (configure in `app.json`)
-- Make sure to set your Anthropic API key before using AI recommendations
+- **Always run the backend proxy server** (`npm run server`) before using AI recommendations
+- API keys are stored securely on the backend - never in the mobile app code
+- See `SECURITY.md` for production deployment instructions
 
 ## Troubleshooting
 
