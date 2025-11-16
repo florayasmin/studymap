@@ -1,6 +1,6 @@
 # API Key Security Guide
 
-## 🔒 How API Keys Are Protected
+## How API Keys Are Protected
 
 This app uses a **backend proxy server** to keep your API keys secure. The API key is **never** exposed in the mobile app code.
 
@@ -30,7 +30,7 @@ PORT=3001
 
 **Get your API key:** [Google AI Studio](https://makersuite.google.com/app/apikey)
 
-**⚠️ Important:** Never commit the `.env` file to git! It's already in `.gitignore`.
+**Important:** Never commit the `.env` file to git! It's already in `.gitignore`.
 
 ### 3. Start the Backend Server
 
@@ -42,8 +42,8 @@ npm run server
 
 You should see:
 ```
-🔒 Secure API proxy server running on http://localhost:3001
-✅ API keys are safely stored on the server
+Secure API proxy server running on http://localhost:3001
+API keys are safely stored on the server
 ```
 
 ### 4. Start the Mobile App
@@ -73,14 +73,14 @@ EXPO_PUBLIC_API_PROXY_URL=https://your-backend-server.com
 
 ## Security Best Practices
 
-✅ **DO:**
+**DO:**
 - Keep API keys in `.env` file (server-side only)
 - Never commit `.env` to version control
 - Use environment variables in production
 - Deploy backend separately from frontend
 - Use HTTPS in production
 
-❌ **DON'T:**
+**DON'T:**
 - Put API keys in client-side code
 - Use `EXPO_PUBLIC_*` for sensitive keys (they get bundled into the app)
 - Commit `.env` files
