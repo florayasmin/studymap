@@ -1,6 +1,6 @@
 # Study Map - React Native App
 
-A React Native mobile application built with Expo that helps students find the best study spots on campus using AI-powered recommendations.
+A React Native application that helps students find the best study spots on campus using AI-powered recommendations.
 
 ## Features
 
@@ -27,7 +27,7 @@ npm install
 
 ### Set Up API Key (Secure Backend Proxy)
 
-**🔒 Important:** This app uses a backend proxy to keep your API key secure. The key is never exposed in the mobile app.
+**Important:** This app uses a backend proxy to keep your API key secure. The key is never exposed in the mobile app.
 
 1. Get a Gemini API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
 
@@ -111,7 +111,7 @@ studymap/
 
 ## Google Maps Setup (iOS)
 
-**⚠️ Important:** Google Maps requires a native build and won't work in Expo Go.
+**Important:** Google Maps requires a native build and won't work in Expo Go.
 
 1. Get a Google Maps API key from [Google Cloud Console](https://console.cloud.google.com/)
 2. Enable **Maps SDK for iOS**
