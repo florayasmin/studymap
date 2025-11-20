@@ -20,7 +20,7 @@ The error "Requests to this API generativelanguage.googleapis.com method google.
 ### Step 2: Check API Key Restrictions
 
 1. Go to **APIs & Services** → **Credentials**
-2. Click on your API key (`AIzaSyCq-U1JyrEUsvKlWAFG6J5V2zZnbrT33hc`)
+2. Click on your API key
 3. Under **API restrictions**:
    - Make sure **"Don't restrict key"** is selected, OR
    - If restricted, ensure **"Generative Language API"** is checked
@@ -53,7 +53,6 @@ If you want to keep your Maps API key separate:
 
 ## Current Configuration
 
-- **API Key**: `AIzaSyCq-U1JyrEUsvKlWAFG6J5V2zZnbrT33hc`
 - **Model**: `gemini-1.5-flash-latest` (or `gemini-2.0-flash` from .env)
 - **API Version**: `v1beta`
 
