@@ -16,7 +16,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.studymap.app",
       "config": {
-        "googleMapsApiKey": "AIzaSyCq-U1JyrEUsvKlWAFG6J5V2zZnbrT33hc"
+        "googleMapsApiKey": "ENTER KEY HERE"
       }
     },
     "plugins": [
