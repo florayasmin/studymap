@@ -41,12 +41,5 @@ If you don't need Google Maps specifically, you can use Apple Maps (default):
 2. Remove the `react-native-google-maps` pod from Podfile
 3. Use default MapView (Apple Maps on iOS)
 
-## Your API Key is Fine
-
-Your API key `AIzaSyCq-U1JyrEUsvKlWAFG6J5V2zZnbrT33hc` is:
-- ✅ Configured in `app.json`
-- ✅ Configured in `AppDelegate.mm`
-- ✅ Configured in `Info.plist`
-
 The issue is **not** the API key - it's the missing AirGoogleMaps directory in Xcode.
 
